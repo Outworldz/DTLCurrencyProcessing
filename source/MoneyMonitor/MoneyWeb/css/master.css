@@ -1,0 +1,96 @@
+HTML {
+	OVERFLOW: hidden
+}
+BODY {
+	FONT-SIZE: 12px; FONT-FAMILY: "Trebuchet MS", Verdana, "Lucida Grande", Lucida, sans-serif
+}
+P {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 5px; PADDING-TOP: 5px
+}
+A {
+	COLOR: #0091ce; TEXT-DECORATION: underline
+}
+H1 {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 5px; PADDING-TOP: 0px
+}
+H2 {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 5px; PADDING-TOP: 0px
+}
+H3 {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 5px; PADDING-TOP: 0px
+}
+H4 {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 5px; PADDING-TOP: 0px
+}
+H1 {
+	PADDING-RIGHT: 15px; PADDING-LEFT: 15px; FONT-SIZE: 18px; PADDING-BOTTOM: 10px; MARGIN: -15px -15px 15px; PADDING-TOP: 10px; BORDER-BOTTOM: #d7d7d7 1px solid; HEIGHT: 20px; BACKGROUND-COLOR: #e6e6e6
+}
+H2 {
+	FONT-SIZE: 13px
+}
+H3 {
+	FONT-SIZE: 11px
+}
+H4 {
+	FONT-SIZE: 9px
+}
+.clear {
+	CLEAR: both
+}
+#header {
+	PADDING-RIGHT: 10px; PADDING-LEFT: 10px; RIGHT: 0px; LEFT: 0px; PADDING-BOTTOM: 10px; COLOR: #ffffff; PADDING-TOP: 10px; POSITION: absolute; TOP: 0px; HEIGHT: 15px; BACKGROUND-COLOR: #212121
+}
+DIV#headerLeft {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 90px; FLOAT: left; BACKGROUND-IMAGE: url(../images/logo.png); PADDING-BOTTOM: 0px; PADDING-TOP: 0px; BACKGROUND-REPEAT: no-repeat; HEIGHT: 15px
+}
+SPAN#HeaderLeftLicense {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 20px; PADDING-BOTTOM: 0px; COLOR: #555555; PADDING-TOP: 0px
+}
+DIV#headerRight {
+	FLOAT: right
+}
+DIV#content {
+	
+}
+DIV#contentLeft {
+	BORDER-RIGHT: #919191 1px solid; PADDING-RIGHT: 20px; PADDING-LEFT: 20px; LEFT: 0px; PADDING-BOTTOM: 10px; OVERFLOW: hidden; WIDTH: 180px; BOTTOM: 0px; PADDING-TOP: 10px; POSITION: absolute; TOP: 35px; BACKGROUND-COLOR: #d7d7d7
+}
+DIV.contentLeftItem {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 4px; PADDING-TOP: 4px
+}
+DIV.contentLeftItemSeperator {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; PADDING-TOP: 10px
+}
+DIV.contentLeftItemIcon {
+	FLOAT: left; MARGIN: 0px 10px 0px 0px; OVERFLOW: hidden; WIDTH: 16px; HEIGHT: 16px
+}
+DIV.contentLeftItemName {
+	FLOAT: left
+}
+DIV#contentRight {
+	PADDING-RIGHT: 15px; PADDING-LEFT: 15px; RIGHT: 0px; LEFT: 221px; PADDING-BOTTOM: 15px; OVERFLOW: auto; BOTTOM: 0px; PADDING-TOP: 15px; POSITION: absolute; TOP: 35px
+}
+A {
+	COLOR: #c75f3e
+}
+TD.top {
+	 BORDER-RIGHT: #dfdfdf 1px solid; PADDING-RIGHT: 6px; BORDER-TOP: #dfdfdf 1px solid; PADDING-LEFT: 12px; BACKGROUND: url(../images/bg_headerB.jpg) #cae8ea repeat-x; PADDING-BOTTOM: 6px; FONT: bold 11px "Trebuchet MS", Verdana, Arial, Helvetica, sans-serif; TEXT-TRANSFORM: uppercase; COLOR: #ffffff; PADDING-TOP: 6px; BORDER-BOTTOM: #dfdfdf 1px solid; TEXT-ALIGN: center
+}
+TH.nobg {
+	BORDER-RIGHT: #ffffff 1px solid; BORDER-TOP: #880000 1px solid; BORDER-LEFT-WIDTH: 0px; BACKGROUND: none transparent scroll repeat 0% 0%; COLOR: #404040
+}
+TD.row {
+	PADDING-RIGHT: 6px; PADDING-LEFT: 12px; BACKGROUND: #fff; PADDING-BOTTOM: 6px; FONT: 10px "Trebuchet MS", Verdana, Arial, Helvetica, sans-serif; COLOR: #404040; PADDING-TOP: 6px
+}
+TD.rowalt {
+	PADDING-RIGHT: 6px; PADDING-LEFT: 12px; BACKGROUND: #faf5f5; PADDING-BOTTOM: 6px; FONT: 10px "Trebuchet MS", Verdana, Arial, Helvetica, sans-serif; COLOR: #797268; PADDING-TOP: 6px
+}
+TD.rowstate {
+	PADDING-RIGHT: 6px; PADDING-LEFT: 12px; PADDING-BOTTOM: 6px; BORDER:1px solid #dfdfdf; FONT: 10px "Trebuchet MS", Verdana, Arial, Helvetica, sans-serif; COLOR: #797268; PADDING-TOP: 6px
+}
+TH.spec {
+	BORDER-TOP-WIDTH: 0px; BACKGROUND: url(../images/bullet1.gif) #fff no-repeat; FONT: bold 10px "Trebuchet MS", Verdana, Arial, Helvetica, sans-serif; BORDER-LEFT: #dfdfdf 1px solid; COLOR: #404040
+}
+TH.specalt {
+	BORDER-TOP-WIDTH: 0px; BACKGROUND: url(../images/bullet2.gif) #faf5f5 no-repeat; FONT: bold 10px "Trebuchet MS", Verdana, Arial, Helvetica, sans-serif; BORDER-LEFT: #dfdfdf 1px solid; COLOR: #797268
+}

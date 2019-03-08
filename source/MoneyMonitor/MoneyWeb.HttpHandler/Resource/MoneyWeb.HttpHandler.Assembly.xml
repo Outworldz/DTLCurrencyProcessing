@@ -1,0 +1,90 @@
+﻿<Nini>
+  <Section Name="onload">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="OnLoadVerify"/>
+    <Key Name="RequestParams" Value="context/HttpContext;resptype/string"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="queryTransaction">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="OnLoadVerify"/>
+    <Key Name="RequestParams" Value="context/HttpContext;resptype/string"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="get_user_by_name">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="XmlRpcResponse"/>
+    <Key Name="RequestParams" Value="context/HttpContext;seruri/string;resptype/string;avatar_name,/Hashtable"/>
+    <Key Name="AssemblyPort" Value="8002"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="WebLogin">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="XmlRpcResponse"/>
+    <Key Name="RequestParams" Value="context/HttpContext;seruris/string;resptype/string;userID,sessionID,/Hashtable"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="WebLogout">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="XmlRpcResponse"/>
+    <Key Name="RequestParams" Value="context/HttpContext;seruris/string;resptype/string;userID,sessionID,/Hashtable"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="WebUpdateBalance">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="XmlRpcResponse"/>
+    <Key Name="RequestParams" Value="context/HttpContext;seruris/string;resptype/string;userID,sessionID,balance,/Hashtable"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="WebGetBalance">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="XmlRpcResponse"/>
+    <Key Name="RequestParams" Value="context/HttpContext;seruris/string;resptype/string;userID,sessionID,/Hashtable"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="WebGetTransaction">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="XmlRpcTransaction"/>
+    <Key Name="RequestParams" Value="context/HttpContext;seruris/string;resptype/string;totalnum/int;currentPage/int;userID,sessionID,startTime,endTime,lastIndex,/Hashtable"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="WebGetTransactionNum">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="XmlRpcResponse"/>
+    <Key Name="RequestParams" Value="context/HttpContext;seruris/string;resptype/string;userID,sessionID,startTime,endTime,/Hashtable"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="LoadcurrentPage">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="LoadcurrentPage"/>
+    <Key Name="RequestParams" Value="context/HttpContext;seruris/string;resptype/string;currentPage/int;sessionID/string"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+  <Section Name="Logoff">
+    <Key Name ="AssemblyPath" Value="MoneyWeb.XmlRpcHandler.dll"/>
+    <Key Name="AssemblyType" Value="MoneyWeb.XmlRpcHandler.XmlRpcFactory"/>
+    <Key Name="RequestMethod" Value="LogoffPage"/>
+    <Key Name="RequestParams" Value="context/HttpContext;resptype/string"/>
+    <Key Name="AssemblyPort" Value="8008"/>
+    <Key Name="ResponseType" Value="XML-RPC"/>
+  </Section>
+</Nini>

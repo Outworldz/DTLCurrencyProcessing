@@ -1,0 +1,238 @@
+﻿
+        .style1
+        {
+            width: 165px;
+        }
+        .style2
+        {
+            width: 165px;
+            height: 12px;
+        }
+        .style3
+        {
+            height: 12px;
+            width: 294px;
+        }
+        .style4
+        {
+            width: 206px;
+        }
+        .style5
+        {
+            height: 12px;
+            width: 206px;
+        }
+        .style7
+        {
+            width: 240px;
+        }
+        .style8
+        {
+            height: 12px;
+            width: 240px;
+        }
+        #Select1
+        {
+            width: 229px;
+        }
+        #EPB_Btn
+        {
+            width: 246px;
+        }
+        #DPB_Btn
+        {
+            width: 251px;
+        }
+        #UT_File
+        {
+            width: 246px;
+        }
+        #UT_Btn
+        {
+            width: 251px;
+        }
+        #TD_Txt
+        {
+            width: 246px;
+        }
+        #TE_Select
+        {
+            width: 246px;
+        }
+        #TM_Select
+        {
+            width: 246px;
+        }
+        #OU_File
+        {
+            width: 246px;
+        }
+        #OD_Txt
+        {
+            width: 246px;
+        }
+        #DT_Btn
+        {
+            width: 251px;
+        }
+        #RE_Btn
+        {
+            width: 251px;
+        }
+        #RM_Btn
+        {
+            width: 251px;
+        }
+        #UO_Btn
+        {
+            width: 251px;
+        }
+        #DO_Btn
+        {
+            width: 251px;
+        }
+        #Text2
+        {
+            width: 245px;
+        }
+        #TD_Btn
+        {
+            width: 250px;
+        }
+.wholediv {
+	border: 1px solid #666666;
+	padding: 15px;
+	width: 450px;
+	vertical-align: middle;
+}
+.wholediv img {
+	vertical-align: middle;
+}
+.centertext {
+	vertical-align: middle;
+}
+.border1px {
+	border: 1px solid #666666;
+}
+.onepixlower {
+	border-top-width: 1px;
+	border-right-width: 1px;
+	border-bottom-width: 1px;
+	border-left-width: 1px;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: solid;
+	border-left-style: none;
+	border-top-color: #000000;
+	border-right-color: #000000;
+	border-bottom-color: #000000;
+	border-left-color: #000000;
+}
+.style9 {
+	font-size: 24px;
+	font-weight: bold;
+	font-family: Arial, Helvetica, sans-serif;
+}
+.style10 {font-family: Arial, Helvetica, sans-serif}
+.style11 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+}
+.style12 {font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: bold; }
+
+#nav {
+	width:180px;
+    line-height: 24px; 
+	list-style-type: none;
+	text-align:left;
+    /*定义整个ul菜单的行高和背景色*/
+}
+/*==================一级目录===================*/
+#nav a {
+	width: 160px; 
+	display: block;
+	padding-left:20px;
+	/*Width(一定要)，否则下面的Li会变形*/
+}
+#nav li {
+	background:#CCC; /*一级目录的背景色*/
+	border-bottom:#FFF 1px solid; /*下面的一条白边*/
+	float:left;
+	/*float：left,本不应该设置，但由于在Firefox不能正常显示
+	继承Nav的width,限制宽度，li自动向下延伸*/
+}
+#nav li a:hover{
+	background:#CC0000;	/*一级目录onMouseOver显示的背景色*/
+}
+#nav a:link  {
+	color:#666; text-decoration:none;
+}
+#nav a:visited  {
+	color:#666;text-decoration:none;
+}
+#nav a:hover  {
+	color:#FFF;text-decoration:none;font-weight:bold;
+}
+/*==================二级目录===================*/
+#nav li ul {
+	list-style:none;
+	text-align:left;
+}
+#nav li ul li{	
+	background: #EBEBEB; /*二级目录的背景色*/
+}
+#nav li ul a{
+         padding-left:20px;
+         width:160px;
+	/* padding-left二级目录中文字向右移动，但Width必须重新设置=(总宽度-padding-left)*/
+}
+/*下面是二级目录的链接样式*/
+#nav li ul a:link  {
+	color:#666; text-decoration:none;
+}
+#nav li ul a:visited  {
+	color:#666;text-decoration:none;
+}
+#nav li ul a:hover {
+	color:#F3F3F3;
+	text-decoration:none;
+	font-weight:normal;
+	background:#CC0000;
+	/* 二级onmouseover的字体颜色、背景色*/
+}
+/*==============================*/
+#nav li:hover ul {
+	left: auto;
+}
+#nav li.sfhover ul {
+	left: auto;
+}
+#content {
+	clear: left; 
+}
+#nav ul.collapsed {
+	display: none;
+}
+-->
+#PARENT{
+	width:400px;
+	padding-left:0px;
+}
+.breadcrumbs {
+	CLEAR: both; PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 1.5em; WIDTH: 100%; PADDING-TOP: 1em;text-align: center
+}
+.breadcrumbs UL {
+	PADDING-RIGHT: 0px; PADDING-LEFT: 0px; PADDING-BOTTOM: 0px; PADDING-TOP: 0px; FONT-FAMILY: verdana,arial,sans-serif; LIST-STYLE-TYPE: none
+}
+.breadcrumbs UL LI {
+	PADDING-RIGHT: 0px; DISPLAY: inline; PADDING-LEFT: 10px; FONT-WEIGHT: bold; FONT-SIZE: 80%; PADDING-BOTTOM: 0px; COLOR: rgb(200,0,0); PADDING-TOP: 0px
+}
+.breadcrumbs UL A {
+	COLOR: rgb(70,122,167); TEXT-DECORATION: none
+}
+.breadcrumbs UL A:hover {
+	COLOR: rgb(42,90,138); TEXT-DECORATION: underline
+}
+.breadcrumbs LI.black {
+	PADDING-RIGHT: 0px; DISPLAY: inline; PADDING-LEFT: 10px; FONT-WEIGHT: bold; FONT-SIZE: 80%; PADDING-BOTTOM: 0px; COLOR: rgb(200,200,200); PADDING-TOP: 0px
+}
