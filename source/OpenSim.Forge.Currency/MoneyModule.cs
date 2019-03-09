@@ -1,60 +1,64 @@
-///*
-// * Copyright (c) Contributors, http://opensimulator.org/
-// * See CONTRIBUTORS.TXT for a full list of copyright holders.
-// *
-// * Redistribution and use in source and binary forms, with or without
-// * modification, are permitted provided that the following conditions are met:
-// *     * Redistributions of source code must retain the above copyright
-// *       notice, this list of conditions and the following disclaimer.
-// *     * Redistributions in binary form must reproduce the above copyright
-// *       notice, this list of conditions and the following disclaimer in the
-// *       documentation and/or other materials provided with the distribution.
-// *     * Neither the name of the OpenSim Project nor the
-// *       names of its contributors may be used to endorse or promote products
-// *       derived from this software without specific prior written permission.
-// *
-// * THIS SOFTWARE IS PROVIDED BY THE DEVELOPERS ``AS IS'' AND ANY
-// * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// * DISCLAIMED. IN NO EVENT SHALL THE CONTRIBUTORS BE LIABLE FOR ANY
-// * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// */
+/*
+ * Copyright (c) Contributors, http://opensimulator.org/
+ * See CONTRIBUTORS.TXT for a full list of copyright holders.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the OpenSimulator Project nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE DEVELOPERS ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
-using System.Reflection;
 using System.Net;
-
+using System.Reflection;
 using log4net;
 using Nini.Config;
 using Nwc.XmlRpc;
+using Mono.Addins;
 using OpenMetaverse;
-
 using OpenSim.Framework;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
-using OpenSim.Services.Interfaces;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
-using OpenSim.Region.Framework;
+using OpenSim.Services.Interfaces;
 
-using Mono.Addins;
+
 
 [assembly: Addin("DTLMoneyModule", "1.0")]
 [assembly: AddinDependency("OpenSim.Region.Framework", OpenSim.VersionInfo.VersionNumber)]
+
 namespace OpenSim.Forge.Currency
 {
     [Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "DTLMoneyModule")]
     public class MoneyModule : IMoneyModule, ISharedRegionModule
     {
-        /*Memebers*************************************************************/
+        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        /// <summary>
+        /// Where Stipends come from and Fees go to.
+        /// </summary>
+        private UUID EconomyBaseAccount = UUID.Zero;
+
         #region Constant numbers and members.
 
         // Constant memebers   
@@ -68,50 +72,81 @@ namespace OpenSim.Forge.Currency
             MONEY_TRANS_PURCHASE,
         }
 
-        // Private data members.   
-        private static readonly ILog m_log =
-            LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        /// <summary>
+        /// Where Stipends come from and Fees go to.
+        /// </summary>
+        // private UUID EconomyBaseAccount = UUID.Zero;
+
+        private float EnergyEfficiency = 1f;
+        // private ObjectPaid handerOnObjectPaid;
+        private bool m_enabled = true;
+        private bool m_sellEnabled = true;
+
 
         private bool m_enable_server = true;	// enable Money Server
-
-        private IConfigSource m_config;
         private string m_moneyServURL = string.Empty;
         private string m_userServIP = string.Empty;
         public BaseHttpServer HttpServer;
 
-        /// <summary>   
-        /// Scene dictionary indexed by Region Handle   
-        /// </summary>   
-        private Dictionary<ulong, Scene> m_sceneList = new Dictionary<ulong, Scene>();
+        /// <summary>
+        /// Scenes by Region Handle
+        /// </summary>
+        private Dictionary<ulong, Scene> m_scenel = new Dictionary<ulong, Scene>();
         /// <summary>   
         /// To cache the balance data while the money server is not available.   
         /// </summary>   
         private Dictionary<UUID, int> m_moneyServer = new Dictionary<UUID, int>();
 
         // Events  
-        public event ObjectPaid OnObjectPaid;
 
-        //Price
+
+        // private int m_stipend = 1000;
+
         private int ObjectCount = 0;
         private int PriceEnergyUnit = 0;
-        private int PriceGroupCreate = 0;
+        private int PriceGroupCreate = -1;
         private int PriceObjectClaim = 0;
         private float PriceObjectRent = 0f;
-        private float PriceObjectScaleFactor = 0f;
+        private float PriceObjectScaleFactor = 10f;
         private int PriceParcelClaim = 0;
+        private float PriceParcelClaimFactor = 1f;
         private int PriceParcelRent = 0;
-        private float PriceParcelClaimFactor = 0f;
         private int PricePublicObjectDecay = 0;
         private int PricePublicObjectDelete = 0;
         private int PriceRentLight = 0;
         private int PriceUpload = 0;
         private int TeleportMinPrice = 0;
-        private float TeleportPriceExponent = 0f;
-        private float EnergyEfficiency = 0f;
+
+        private float TeleportPriceExponent = 2f;
 
         #endregion
-        /*Public***************************************************************/
-        #region IRegionModule interface
+
+        #region IMoneyModule Members
+
+#pragma warning disable 0067
+        public event ObjectPaid OnObjectPaid;
+#pragma warning restore 0067
+
+        public int UploadCharge
+        {
+            get { return PriceUpload; }
+        }
+
+        public int GroupCreationCharge
+        {
+            get { return PriceGroupCreate; }
+        }
+
+        /// <summary>
+        /// Called on startup so the module can be configured.
+        /// </summary>
+        /// <param name="config">Configuration source.</param>
+        public void Initialise(IConfigSource config)
+        {
+            // Handle the parameters errors.
+            if (config == null) return;
+            ReadConfigAndPopulate(config);
+        }
 
         public void Initialise(Scene scene, IConfigSource source)
         {
@@ -121,129 +156,94 @@ namespace OpenSim.Forge.Currency
             AddRegion(scene);
         }
 
-        public void Initialise(IConfigSource source)
-        {
-            // Handle the parameters errors.
-            if (source == null) return;
-
-            try
-            {
-                m_config = source;
-
-                IConfig economyConfig = m_config.Configs["Economy"];
-                m_userServIP = Util.GetHostFromDNS(economyConfig.GetString("user_server_url").Split(new char[] { '/', ':' })[3]).ToString();
-                m_moneyServURL = economyConfig.GetString("CurrencyServer").ToString();
-                // Check if the DTLMoneyModule is configured to load.
-                if (economyConfig.GetString("EconomyModule").ToString() != "DTLMoneyModule")
-                {
-                    return;
-                }
-                // Price
-                PriceEnergyUnit = economyConfig.GetInt("PriceEnergyUnit", 100);
-                PriceObjectClaim = economyConfig.GetInt("PriceObjectClaim", 10);
-                PricePublicObjectDecay = economyConfig.GetInt("PricePublicObjectDecay", 4);
-                PricePublicObjectDelete = economyConfig.GetInt("PricePublicObjectDelete", 4);
-                PriceParcelClaim = economyConfig.GetInt("PriceParcelClaim", 1);
-                PriceParcelClaimFactor = economyConfig.GetFloat("PriceParcelClaimFactor", 1f);
-                PriceUpload = economyConfig.GetInt("PriceUpload", 0);
-                PriceRentLight = economyConfig.GetInt("PriceRentLight", 5);
-                PriceObjectRent = economyConfig.GetFloat("PriceObjectRent", 1);
-                PriceObjectScaleFactor = economyConfig.GetFloat("PriceObjectScaleFactor", 10);
-                PriceParcelRent = economyConfig.GetInt("PriceParcelRent", 1);
-                PriceGroupCreate = economyConfig.GetInt("PriceGroupCreate", 0);
-                TeleportMinPrice = economyConfig.GetInt("TeleportMinPrice", 2);
-                TeleportPriceExponent = economyConfig.GetFloat("TeleportPriceExponent", 2f);
-                EnergyEfficiency = economyConfig.GetFloat("EnergyEfficiency", 1);
-            }
-            catch
-            {
-                m_log.ErrorFormat("[MONEY]: Faile to read configuration file.");
-            }
-        }
-
         public void AddRegion(Scene scene)
         {
-            scene.RegisterModuleInterface<IMoneyModule>(this);
-
-            lock (m_sceneList)
+            if (m_enabled)
             {
-                if (m_sceneList.Count == 0)
+                scene.RegisterModuleInterface<IMoneyModule>(this);
+                IHttpServer httpServer = MainServer.Instance;
+
+                lock (m_scenel)
                 {
-                    if (!string.IsNullOrEmpty(m_moneyServURL))
+                    if (m_scenel.Count == 0)
                     {
-                        MainServer.Instance.AddXmlRPCHandler("UpdateBalance", BalanceUpdateHandler);
-                        MainServer.Instance.AddXmlRPCHandler("UserAlert", UserAlertHandler);
-                        MainServer.Instance.AddXmlRPCHandler("SendConfirmLink", SendConfirmLinkHandler);
-                        MainServer.Instance.AddXmlRPCHandler("OnMoneyTransfered", OnMoneyTransferedHandler);
+                        if (!string.IsNullOrEmpty(m_moneyServURL))
+                        {
+                            // XMLRPCHandler = scene;
+
+                            // To use the following you need to add:
+                            // -helperuri <ADDRESS TO HERE OR grid MONEY SERVER>
+                            // to the command line parameters you use to start up your client
+                            // This commonly looks like -helperuri http://127.0.0.1:9000/
+
+                            httpServer.AddXmlRPCHandler("UpdateBalance", BalanceUpdateHandler);
+                            httpServer.AddXmlRPCHandler("UserAlert", UserAlert);
+                            httpServer.AddXmlRPCHandler("SendConfirmLink", SendConfirmLinkHandler);
+                            httpServer.AddXmlRPCHandler("OnMoneyTransfered", OnMoneyTransferedHandler);
+
+                            /*// Local Server..  enables functionality only.
+                            httpServer.AddXmlRPCHandler("getCurrencyQuote", quote_func);
+                            httpServer.AddXmlRPCHandler("buyCurrency", buy_func);
+                            httpServer.AddXmlRPCHandler("preflightBuyLandPrep", preflightBuyLandPrep_func);
+                            httpServer.AddXmlRPCHandler("buyLandPrep", landBuy_func);*/
+                        }
+                    }
+
+                    if (m_scenel.ContainsKey(scene.RegionInfo.RegionHandle))
+                    {
+                        m_scenel[scene.RegionInfo.RegionHandle] = scene;
+                    }
+                    else
+                    {
+                        m_scenel.Add(scene.RegionInfo.RegionHandle, scene);
                     }
                 }
 
-                if (m_sceneList.ContainsKey(scene.RegionInfo.RegionHandle))
-                {
-                    m_sceneList[scene.RegionInfo.RegionHandle] = scene;
-                }
-                else
-                {
-                    m_sceneList.Add(scene.RegionInfo.RegionHandle, scene);
-                }
 
+                scene.EventManager.OnNewClient += OnNewClient;
+                scene.EventManager.OnMoneyTransfer += MoneyTransferAction;
+                scene.EventManager.OnClientClosed += ClientClosed;
+                scene.EventManager.OnAvatarEnteringNewParcel += AvatarEnteringParcel;
+                scene.EventManager.OnMakeChildAgent += MakeChildAgent;
+                scene.EventManager.OnClientClosed += ClientLoggedOut;
+                scene.EventManager.OnValidateLandBuy += ValidateLandBuy;
+                scene.EventManager.OnLandBuy += ProcessLandBuy;
             }
-
-            scene.EventManager.OnNewClient += OnNewClient;
-            scene.EventManager.OnMoneyTransfer += MoneyTransferAction;
-            //scene.EventManager.OnClientClosed += ClientClosed;
-            scene.EventManager.OnAvatarEnteringNewParcel += AvatarEnteringParcel;
-            scene.EventManager.OnMakeChildAgent += MakeChildAgent;
-            scene.EventManager.OnValidateLandBuy += ValidateLandBuy;
-            scene.EventManager.OnLandBuy += processLandBuy;
         }
 
         public void RemoveRegion(Scene scene)
         {
         }
 
-
         public void RegionLoaded(Scene scene)
         {
         }
 
 
-        public Type ReplaceableInterface
+        // Please do not refactor these to be just one method
+        // Existing implementations need the distinction
+        //
+        public void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type, string extraData)
         {
-            //get { return typeof(IMoneyModule); }
-            get { return null; }
+            ApplyCharge(agentID, amount, type, extraData);
         }
 
-        public void PostInitialise()
+        public void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type)
         {
-
+            ApplyCharge(agentID, amount, type);
         }
 
-        public bool IsSharedModule
+        public void ApplyUploadCharge(UUID agentID, int amount, string text)
         {
-            get { return true; }
+            ulong region = LocateSceneClientIn(agentID).RegionInfo.RegionHandle;
+            PayMoneyCharge(agentID, amount, (int)MoneyTransactionType.UploadCharge, region, text);
         }
 
-        public string Name
+        public bool ObjectGiveMoney(UUID objectID, UUID fromID, UUID toID, int amount, UUID txn, out string result)
         {
-            get { return "DTLMoneyModule"; }
-        }
-
-        public void Close()
-        {
-
-        }
-
-        #endregion
-
-        // Since the economy data won't be used anymore,    
-        // removed the related legacy code from interface implement.   
-        #region IMoneyModule interface.
-
-        public bool ObjectGiveMoney(UUID objectID, UUID fromID, UUID toID, int amount)
-        {
-            string objName = string.Empty;
-            string avatarName = string.Empty;
+            result = String.Empty;
+            string objName = String.Empty;
+            string avatarName = String.Empty;
             SceneObjectPart sceneObj = FindPrim(objectID);
             if (sceneObj != null)
             {
@@ -251,9 +251,9 @@ namespace OpenSim.Forge.Currency
             }
 
             Scene scene = null;
-            if (m_sceneList.Count > 0)
+            if (m_scenel.Count > 0)
             {
-                scene = m_sceneList[0];
+                scene = m_scenel[0];
             }
             if (scene != null)
             {
@@ -265,130 +265,535 @@ namespace OpenSim.Forge.Currency
             }
 
             string description = String.Format("Object {0} pays {1}", objName, avatarName);
-            bool ret = TransferMoney(fromID, toID, amount, (int)MoneyTransactionType.ObjectPays, sceneObj.UUID, sceneObj.RegionHandle, description);
+            bool give_result = TransferMoney(fromID, toID, amount, (int)MoneyTransactionType.ObjectPays, sceneObj.UUID, sceneObj.RegionHandle, description);
 
-            return ret;
+            return give_result;
         }
 
-        public int GetBalance(IClientAPI client)
+        public void PostInitialise()
         {
-            return QueryBalanceFromMoneyServer(client);
         }
 
-        public int GetBalance(UUID agentID)
+        public void Close()
         {
-            IClientAPI client = (IClientAPI)LocateSceneClientIn(agentID);
-            return QueryBalanceFromMoneyServer(client);
         }
 
-        public void ApplyUploadCharge(UUID agentID)
+        public Type ReplaceableInterface
         {
-            // Empty!
+            get { return typeof(IMoneyModule); }
         }
 
-        public bool UploadCovered(IClientAPI client)
+        public string Name
         {
-            return true;
-        }
-
-        public bool UploadCovered(UUID agentID, int amount)
-        {
-            IClientAPI client = (IClientAPI)LocateSceneClientIn(agentID);
-            int balance = QueryBalanceFromMoneyServer(client);
-            if (balance < amount) return false;
-            return true;
-        }
-
-        public void ApplyGroupCreationCharge(UUID agentID)
-        {
-            // Empty!
-        }
-
-        public bool GroupCreationCovered(IClientAPI client)
-        {
-            return true;
-        }
-
-        public bool AmountCovered(IClientAPI client, int amount)
-        {
-            return true;
-        }
-
-        public bool AmountCovered(UUID agentID, int amount)
-        {
-            IClientAPI client = (IClientAPI)LocateSceneClientIn(agentID);
-            int balance = QueryBalanceFromMoneyServer(client);
-            if (balance < amount) return false;
-            return true;
-        }
-
-        /*public void ApplyCharge(UUID agentID, int amount, string text)
-        {
-            // Empty!
-        }*/
-
-        public void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type)
-        {
-            ApplyCharge(agentID, amount, type);
-        }
-
-        public void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type, string text)
-        {
-            ApplyCharge(agentID, amount, type, text);
-        }
-
-        public void ApplyUploadCharge(UUID agentID, int amount, string text)
-        {
-            ulong region = LocateSceneClientIn(agentID).RegionInfo.RegionHandle;
-            PayMoneyCharge(agentID, amount, (int)MoneyTransactionType.UploadCharge, region, text);
-        }
-
-        /*public EconomyData GetEconomyData()
-        {
-            return new EconomyData();
-        }*/
-
-        //
-        public int UploadCharge
-        {
-            get { return PriceUpload; }
-        }
-
-
-        //
-        public int GroupCreationCharge
-        {
-            get { return PriceGroupCreate; }
+            get { return "DTLMoneyModule"; }
         }
 
         #endregion
 
-        #region MoneyModule event handlers
+        /// <summary>
+        /// Parse Configuration
+        /// </summary>
+        private void ReadConfigAndPopulate(IConfigSource config)
+        {
+            // we are enabled by default
 
+            IConfig startupConfig = config.Configs["Startup"];
+
+            if (startupConfig == null) // should not happen
+                return;
+
+            IConfig economyConfig = config.Configs["Economy"];
+
+            // economymodule may be at startup or Economy (legacy)
+            string mmodule = startupConfig.GetString("economymodule", "");
+            if (String.IsNullOrEmpty(mmodule))
+            {
+                if (economyConfig != null)
+                    mmodule = economyConfig.GetString("economymodule", "");
+            }
+
+            if (!String.IsNullOrEmpty(mmodule) && mmodule != Name)
+            {
+                // some other money module selected
+                m_enabled = false;
+                return;
+            }
+
+            if (economyConfig == null)
+                return;
+
+            m_userServIP = Util.GetHostFromDNS(economyConfig.GetString("user_server_url").Split(new char[] { '/', ':' })[3]).ToString();
+            m_moneyServURL = economyConfig.GetString("CurrencyServer").ToString();
+            // Check if the DTLMoneyModule is configured to load.
+            if (economyConfig.GetString("EconomyModule").ToString() != "DTLMoneyModule")
+            {
+                return;
+            }
+            // Price
+            PriceEnergyUnit = economyConfig.GetInt("PriceEnergyUnit", 100);
+            PriceObjectClaim = economyConfig.GetInt("PriceObjectClaim", 10);
+            PricePublicObjectDecay = economyConfig.GetInt("PricePublicObjectDecay", 4);
+            PricePublicObjectDelete = economyConfig.GetInt("PricePublicObjectDelete", 4);
+            PriceParcelClaim = economyConfig.GetInt("PriceParcelClaim", 1);
+            PriceParcelClaimFactor = economyConfig.GetFloat("PriceParcelClaimFactor", 1f);
+            PriceUpload = economyConfig.GetInt("PriceUpload", 0);
+            PriceRentLight = economyConfig.GetInt("PriceRentLight", 5);
+            TeleportMinPrice = economyConfig.GetInt("TeleportMinPrice", 2);
+            TeleportPriceExponent = economyConfig.GetFloat("TeleportPriceExponent", 2f);
+            EnergyEfficiency = economyConfig.GetFloat("EnergyEfficiency", 1);
+            PriceObjectRent = economyConfig.GetFloat("PriceObjectRent", 1);
+            PriceObjectScaleFactor = economyConfig.GetFloat("PriceObjectScaleFactor", 10);
+            PriceParcelRent = economyConfig.GetInt("PriceParcelRent", 1);
+            PriceGroupCreate = economyConfig.GetInt("PriceGroupCreate", 0);
+            m_sellEnabled = economyConfig.GetBoolean("SellEnabled", true);
+        }
+
+        /*
+
+        private void GetClientFunds(IClientAPI client)
+        {
+            CheckExistAndRefreshFunds(client.AgentId);
+        }
+
+        /// <summary>
+        /// New Client Event Handler
+        /// </summary>
+        /// <param name="client"></param>
         private void OnNewClient(IClientAPI client)
         {
-            int balance = 0;
-            LoginMoneyServer(client, out balance);
-            client.SendMoneyBalance(UUID.Zero, true, new byte[0], balance, 0, UUID.Zero, false, UUID.Zero, false, 0, String.Empty);
+            GetClientFunds(client);
 
-            // Subscribe to Money messages   
-            client.OnEconomyDataRequest += OnEconomyDataRequest;
-            client.OnMoneyBalanceRequest += OnMoneyBalanceRequest;
-            client.OnRequestPayPrice += OnRequestPayPrice;
-            client.OnObjectBuy += OnObjectBuy;
+            // Subscribe to Money messages
+            client.OnEconomyDataRequest += EconomyDataRequestHandler;
+            client.OnMoneyBalanceRequest += SendMoneyBalance;
+            client.OnRequestPayPrice += requestPayPrice;
+            client.OnObjectBuy += ObjectBuy;
             client.OnLogout += ClientClosed;
         }
 
-        /*private void ClientClosed(UUID clientID)
+        /// <summary>
+        /// Transfer money
+        /// </summary>
+        /// <param name="Sender"></param>
+        /// <param name="Receiver"></param>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        private bool doMoneyTransfer(UUID Sender, UUID Receiver, int amount, int transactiontype, string description)
         {
-            IClientAPI client = LocateClientObject(clientID);
-            if (client != null)
+            bool result = true;
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// Sends the the stored money balance to the client
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="agentID"></param>
+        /// <param name="SessionID"></param>
+        /// <param name="TransactionID"></param>
+        public void SendMoneyBalance(IClientAPI client, UUID agentID, UUID SessionID, UUID TransactionID)
+        {
+            if (client.AgentId == agentID && client.SessionId == SessionID)
             {
-                // If the User is just transferred to another region. No need to logoff from money server.
-                // LogoffMoneyServer(client);
+                int returnfunds = 0;
+
+                try
+                {
+                    returnfunds = GetFundsForAgentID(agentID);
+                }
+                catch (Exception e)
+                {
+                    client.SendAlertMessage(e.Message + " ");
+                }
+
+                client.SendMoneyBalance(TransactionID, true, new byte[0], returnfunds, 0, UUID.Zero, false, UUID.Zero, false, 0, String.Empty);
+            }
+            else
+            {
+                client.SendAlertMessage("Unable to send your money balance to you!");
             }
         }*/
 
+                            private SceneObjectPart FindPrim(UUID objectID)
+        {
+            lock (m_scenel)
+            {
+                foreach (Scene s in m_scenel.Values)
+                {
+                    SceneObjectPart part = s.GetSceneObjectPart(objectID);
+                    if (part != null)
+                    {
+                        return part;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private string resolveObjectName(UUID objectID)
+        {
+            SceneObjectPart part = FindPrim(objectID);
+            if (part != null)
+            {
+                return part.Name;
+            }
+            return String.Empty;
+        }/*
+
+        private string resolveAgentName(UUID agentID)
+        {
+            // try avatar username surname
+            Scene scene = GetRandomScene();
+            UserAccount account = scene.UserAccountService.GetUserAccount(scene.RegionInfo.ScopeID, agentID);
+            if (account != null)
+            {
+                string avatarname = account.FirstName + " " + account.LastName;
+                return avatarname;
+            }
+            else
+            {
+                m_log.ErrorFormat(
+                    "[MONEY]: Could not resolve user {0}",
+                    agentID);
+            }
+
+            return String.Empty;
+        }
+
+        private void BalanceUpdate(UUID senderID, UUID receiverID, bool transactionresult, string description)
+        {
+            IClientAPI sender = LocateClientObject(senderID);
+            IClientAPI receiver = LocateClientObject(receiverID);
+
+            if (senderID != receiverID)
+            {
+                if (sender != null)
+                {
+                    sender.SendMoneyBalance(UUID.Random(), transactionresult, Utils.StringToBytes(description), GetFundsForAgentID(senderID), 0, UUID.Zero, false, UUID.Zero, false, 0, String.Empty);
+                }
+
+                if (receiver != null)
+                {
+                    receiver.SendMoneyBalance(UUID.Random(), transactionresult, Utils.StringToBytes(description), GetFundsForAgentID(receiverID), 0, UUID.Zero, false, UUID.Zero, false, 0, String.Empty);
+                }
+            }
+        }
+
+*/
+
+        /// <summary>
+        /// XMLRPC handler to send alert message and sound to client
+        /// </summary>
+        public XmlRpcResponse UserAlert(XmlRpcRequest request, IPEndPoint remoteClient)
+        {
+            bool ret = false;
+
+            #region confirm the request and show the notice from money server.
+
+            if (request.Params.Count > 0)
+            {
+                Hashtable requestParam = (Hashtable)request.Params[0];
+                if (requestParam.Contains("clientUUID") &&
+                    requestParam.Contains("clientSessionID") &&
+                    requestParam.Contains("clientSecureSessionID"))
+                {
+                    UUID clientUUID = UUID.Zero;
+                    UUID.TryParse((string)requestParam["clientUUID"], out clientUUID);
+                    if (clientUUID != UUID.Zero)
+                    {
+                        IClientAPI client = LocateClientObject(clientUUID);
+                        if (client != null &&
+                            client.SessionId.ToString() == (string)requestParam["clientSessionID"] &&
+                            client.SecureSessionId.ToString() == (string)requestParam["clientSecureSessionID"])
+                        {
+                            if (requestParam.Contains("Description"))
+                            {
+                                // Show the notice dialog with money server message.
+                                GridInstantMessage gridMsg = new GridInstantMessage(null,
+                                                                                     UUID.Zero,
+                                                                                     "MonyServer",
+                                                                                     new UUID(clientUUID.ToString()),
+                                                                                     (byte)InstantMessageDialog.MessageFromAgent,
+                                                                                     "Please clink the URI in IM window to confirm your purchase.",
+                                                                                     false,
+                                                                                     new Vector3());
+
+                                client.SendInstantMessage(gridMsg);
+                                ret = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            #endregion
+
+            // Send the response to money server.
+            XmlRpcResponse resp = new XmlRpcResponse();
+            Hashtable paramTable = new Hashtable();
+            paramTable["success"] = ret;
+
+            resp.Value = paramTable;
+            return resp;
+        }
+
+        #region Standalone box enablers only
+        /*
+                public XmlRpcResponse quote_func(XmlRpcRequest request, IPEndPoint remoteClient)
+                {
+                    // Hashtable requestData = (Hashtable) request.Params[0];
+                    // UUID agentId = UUID.Zero;
+                    int amount = 0;
+                    Hashtable quoteResponse = new Hashtable();
+                    XmlRpcResponse returnval = new XmlRpcResponse();
+
+
+                    Hashtable currencyResponse = new Hashtable();
+                    currencyResponse.Add("estimatedCost", 0);
+                    currencyResponse.Add("currencyBuy", amount);
+
+                    quoteResponse.Add("success", true);
+                    quoteResponse.Add("currency", currencyResponse);
+                    quoteResponse.Add("confirm", "asdfad9fj39ma9fj");
+
+                    returnval.Value = quoteResponse;
+                    return returnval;
+
+
+
+                }
+
+                public XmlRpcResponse buy_func(XmlRpcRequest request, IPEndPoint remoteClient)
+                {
+                    // Hashtable requestData = (Hashtable) request.Params[0];
+                    // UUID agentId = UUID.Zero;
+                    // int amount = 0;
+
+                    XmlRpcResponse returnval = new XmlRpcResponse();
+                    Hashtable returnresp = new Hashtable();
+                    returnresp.Add("success", true);
+                    returnval.Value = returnresp;
+                    return returnval;
+                }
+
+                public XmlRpcResponse preflightBuyLandPrep_func(XmlRpcRequest request, IPEndPoint remoteClient)
+                {
+                    XmlRpcResponse ret = new XmlRpcResponse();
+                    Hashtable retparam = new Hashtable();
+                    Hashtable membershiplevels = new Hashtable();
+                    ArrayList levels = new ArrayList();
+                    Hashtable level = new Hashtable();
+                    level.Add("id", "00000000-0000-0000-0000-000000000000");
+                    level.Add("description", "some level");
+                    levels.Add(level);
+                    //membershiplevels.Add("levels",levels);
+
+                    Hashtable landuse = new Hashtable();
+                    landuse.Add("upgrade", false);
+                    landuse.Add("action", "http://invaliddomaininvalid.com/");
+
+                    Hashtable currency = new Hashtable();
+                    currency.Add("estimatedCost", 0);
+
+                    Hashtable membership = new Hashtable();
+                    membershiplevels.Add("upgrade", false);
+                    membershiplevels.Add("action", "http://invaliddomaininvalid.com/");
+                    membershiplevels.Add("levels", membershiplevels);
+
+                    retparam.Add("success", true);
+                    retparam.Add("currency", currency);
+                    retparam.Add("membership", membership);
+                    retparam.Add("landuse", landuse);
+                    retparam.Add("confirm", "asdfajsdkfjasdkfjalsdfjasdf");
+
+                    ret.Value = retparam;
+
+                    return ret;
+                }
+
+                public XmlRpcResponse landBuy_func(XmlRpcRequest request, IPEndPoint remoteClient)
+                {
+                    XmlRpcResponse ret = new XmlRpcResponse();
+                    Hashtable retparam = new Hashtable();
+                    // Hashtable requestData = (Hashtable) request.Params[0];
+
+                    // UUID agentId = UUID.Zero;
+                    // int amount = 0;
+
+                    retparam.Add("success", true);
+                    ret.Value = retparam;
+
+                    return ret;
+                }
+        */
+        #endregion
+
+        #region local Fund Management
+        /*
+                /// <summary>
+                /// Ensures that the agent accounting data is set up in this instance.
+                /// </summary>
+                /// <param name="agentID"></param>
+                private void CheckExistAndRefreshFunds(UUID agentID)
+                {
+
+                }
+
+                /// <summary>
+                /// Gets the amount of Funds for an agent
+                /// </summary>
+                /// <param name="AgentID"></param>
+                /// <returns></returns>
+                private int GetFundsForAgentID(UUID AgentID)
+                {
+                    int returnfunds = 0;
+
+                    return returnfunds;
+                }
+
+                // private void SetLocalFundsForAgentID(UUID AgentID, int amount)
+                // {
+
+                // }
+        */
+        #endregion
+
+        #region Utility Helpers
+
+        /// <summary>
+        /// Locates a IClientAPI for the client specified
+        /// </summary>
+        /// <param name="AgentID"></param>
+        /// <returns></returns>
+        private IClientAPI LocateClientObject(UUID AgentID)
+        {
+            ScenePresence tPresence = null;
+            IClientAPI rclient = null;
+
+            lock (m_scenel)
+            {
+                foreach (Scene _scene in m_scenel.Values)
+                {
+                    tPresence = _scene.GetScenePresence(AgentID);
+                    if (tPresence != null)
+                    {
+                        if (!tPresence.IsChildAgent)
+                        {
+                            rclient = tPresence.ControllingClient;
+                        }
+                    }
+                    if (rclient != null)
+                    {
+                        return rclient;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private Scene LocateSceneClientIn(UUID AgentId)
+        {
+            lock (m_scenel)
+            {
+                foreach (Scene _scene in m_scenel.Values)
+                {
+                    ScenePresence tPresence = _scene.GetScenePresence(AgentId);
+                    if (tPresence != null)
+                    {
+                        if (!tPresence.IsChildAgent)
+                        {
+                            return _scene;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Utility function Gets a Random scene in the instance.  For when which scene exactly you're doing something with doesn't matter
+        /// </summary>
+        /// <returns></returns>
+        public Scene GetRandomScene()
+        {
+            lock (m_scenel)
+            {
+                foreach (Scene rs in m_scenel.Values)
+                    return rs;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Utility function to get a Scene by RegionID in a module
+        /// </summary>
+        /// <param name="RegionID"></param>
+        /// <returns></returns>
+        public Scene GetSceneByUUID(UUID RegionID)
+        {
+            lock (m_scenel)
+            {
+                foreach (Scene rs in m_scenel.Values)
+                {
+                    if (rs.RegionInfo.originRegionID == RegionID)
+                    {
+                        return rs;
+                    }
+                }
+            }
+            return null;
+        }
+
+        #endregion
+
+        #region event Handlers
+
+        private void RequestPayPrice(IClientAPI client, UUID objectID)
+        {
+            Scene scene = LocateSceneClientIn(client.AgentId);
+            if (scene == null)
+                return;
+
+            SceneObjectPart task = scene.GetSceneObjectPart(objectID);
+            if (task == null)
+                return;
+            SceneObjectGroup group = task.ParentGroup;
+            SceneObjectPart root = group.RootPart;
+
+            client.SendPayPrice(objectID, root.PayPrice);
+        }
+
+        /// <summary>
+        /// When the client closes the connection we remove their accounting
+        /// info from memory to free up resources.
+        /// </summary>
+        /// <param name="AgentID">UUID of agent</param>
+        /// <param name="scene">Scene the agent was connected to.</param>
+        /// <see cref="OpenSim.Region.Framework.Scenes.EventManager.ClientClosed"/>
+        public void ClientClosed(UUID AgentID, Scene scene)
+        {
+            IClientAPI client = LocateClientObject(AgentID);
+            if (client != null)
+            {
+                LogoffMoneyServer(client);
+            }
+        }
+
+        private void ClientClosed(UUID AgentID)
+        {
+            IClientAPI client = LocateClientObject(AgentID);
+            if (client != null)
+            {
+                // If the User is just transferred to another region. No need to logoff from money server.
+                LogoffMoneyServer(client);
+            }
+        }
+        /// <summary>
+        /// Call this when the client disconnects.
+        /// </summary>
+        /// <param name="client"></param>
         private void ClientClosed(IClientAPI client)
         {
             if (client != null)
@@ -397,6 +802,69 @@ namespace OpenSim.Forge.Currency
             }
         }
 
+        /// <summary>
+        /// Event called Economy Data Request handler.
+        /// </summary>
+        /// <param name="agentId"></param>
+        private void EconomyDataRequestHandler(IClientAPI user)
+        {
+            if (user != null)
+            {
+                Scene s = (Scene)user.Scene;
+
+                user.SendEconomyData(EnergyEfficiency, s.RegionInfo.ObjectCapacity, ObjectCount, PriceEnergyUnit, PriceGroupCreate,
+                                     PriceObjectClaim, PriceObjectRent, PriceObjectScaleFactor, PriceParcelClaim, PriceParcelClaimFactor,
+                                     PriceParcelRent, PricePublicObjectDecay, PricePublicObjectDelete, PriceRentLight, PriceUpload,
+                                     TeleportMinPrice, TeleportPriceExponent);
+            }
+        }
+
+        private void ValidateLandBuy(Object sender, EventManager.LandBuyArgs landBuyEvent)
+        {
+            IClientAPI senderClient = LocateClientObject(landBuyEvent.agentId);
+            if (senderClient != null)
+            {
+                int balance = QueryBalanceFromMoneyServer(senderClient);
+                if (balance >= landBuyEvent.parcelPrice)
+                {
+                    lock (landBuyEvent)
+                    {
+                        landBuyEvent.economyValidated = true;
+                    }
+                }
+            }
+        }
+
+        private void ProcessLandBuy(Object sender, EventManager.LandBuyArgs landBuyEvent)
+        {
+            lock (landBuyEvent)
+            {
+                if (landBuyEvent.economyValidated == true &&
+                    landBuyEvent.transactionID == 0)
+                {
+                    landBuyEvent.transactionID = Util.UnixTimeSinceEpoch();
+
+                    ulong parcelID = (ulong)landBuyEvent.parcelLocalID;
+                    UUID regionID = UUID.Zero;
+                    if (sender is Scene) regionID = ((Scene)sender).RegionInfo.RegionID;
+
+                    if (TransferMoney(landBuyEvent.agentId, landBuyEvent.parcelOwnerID,
+                                      landBuyEvent.parcelPrice, (int)MoneyTransactionType.LandSale, regionID, parcelID, "Land Purchase"))
+                    {
+                        lock (landBuyEvent)
+                        {
+                            landBuyEvent.amountDebited = landBuyEvent.parcelPrice;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// THis method gets called when someone pays someone else as a gift.
+        /// </summary>
+        /// <param name="osender"></param>
+        /// <param name="e"></param>
         private void MoneyTransferAction(Object sender, EventManager.MoneyTransferArgs moneyEvent)
         {
             // Check the money transaction is necessary.   
@@ -444,6 +912,30 @@ namespace OpenSim.Forge.Currency
                                      description);
         }
 
+        /// <summary>
+        /// Event Handler for when a root agent becomes a child agent
+        /// </summary>
+        /// <param name="avatar"></param>
+        private void MakeChildAgent(ScenePresence avatar)
+        {
+
+        }
+
+        /// <summary>
+        /// Event Handler for when the client logs out.
+        /// </summary>
+        /// <param name="AgentId"></param>
+        private void ClientLoggedOut(UUID AgentId, Scene scene)
+        {
+
+        }
+
+        /// <summary>
+        /// Event Handler for when an Avatar enters one of the parcels in the simulator.
+        /// </summary>
+        /// <param name="avatar"></param>
+        /// <param name="localLandID"></param>
+        /// <param name="regionID"></param>
         private void AvatarEnteringParcel(ScenePresence avatar, int localLandID, UUID regionID)
         {
             ILandObject obj = avatar.Scene.LandChannel.GetLandObject(avatar.AbsolutePosition.X, avatar.AbsolutePosition.Y);
@@ -457,53 +949,116 @@ namespace OpenSim.Forge.Currency
             }
         }
 
-        private void MakeChildAgent(ScenePresence avatar)
+        public int GetBalance(IClientAPI client)
         {
-
+            return QueryBalanceFromMoneyServer(client);
         }
 
-        private void ValidateLandBuy(Object sender, EventManager.LandBuyArgs landBuyEvent)
+        public int GetBalance(UUID agentID)
         {
-            IClientAPI senderClient = LocateClientObject(landBuyEvent.agentId);
-            if (senderClient != null)
-            {
-                int balance = QueryBalanceFromMoneyServer(senderClient);
-                if (balance >= landBuyEvent.parcelPrice)
-                {
-                    lock (landBuyEvent)
-                    {
-                        landBuyEvent.economyValidated = true;
-                    }
-                }
-            }
+            IClientAPI client = (IClientAPI)LocateSceneClientIn(agentID);
+            return QueryBalanceFromMoneyServer(client);
         }
 
-        private void processLandBuy(Object sender, EventManager.LandBuyArgs landBuyEvent)
+        // Please do not refactor these to be just one method
+        // Existing implementations need the distinction
+        //
+        public bool UploadCovered(IClientAPI client)
         {
-            lock (landBuyEvent)
-            {
-                if (landBuyEvent.economyValidated == true &&
-                    landBuyEvent.transactionID == 0)
-                {
-                    landBuyEvent.transactionID = Util.UnixTimeSinceEpoch();
+            return true;
+        }
 
-                    ulong parcelID = (ulong)landBuyEvent.parcelLocalID;
-                    UUID regionID = UUID.Zero;
-                    if (sender is Scene) regionID = ((Scene)sender).RegionInfo.RegionID;
+        public bool UploadCovered(UUID agentID, int amount)
+        {
+            IClientAPI client = (IClientAPI)LocateSceneClientIn(agentID);
+            int balance = QueryBalanceFromMoneyServer(client);
+            if (balance < amount) return false;
+            return true;
+        }
 
-                    if (TransferMoney(landBuyEvent.agentId, landBuyEvent.parcelOwnerID,
-                                      landBuyEvent.parcelPrice, (int)MoneyTransactionType.LandSale, regionID, parcelID, "Land Purchase"))
-                    {
-                        lock (landBuyEvent)
-                        {
-                            landBuyEvent.amountDebited = landBuyEvent.parcelPrice;
-                        }
-                    }
-                }
-            }
+        public bool AmountCovered(IClientAPI client, int amount)
+        {
+            return true;
+        }
+
+        public bool AmountCovered(UUID agentID, int amount)
+        {
+            IClientAPI client = (IClientAPI)LocateSceneClientIn(agentID);
+            int balance = QueryBalanceFromMoneyServer(client);
+            if (balance < amount) return false;
+            return true;
         }
 
         #endregion
+
+        public void ObjectBuy(IClientAPI remoteClient, UUID agentID,
+                        UUID sessionID, UUID groupID, UUID categoryID,
+                        uint localID, byte saleType, int salePrice)
+        {
+            // Handle the parameters error.   
+            if (remoteClient == null || salePrice <= 0) return;
+
+            // Get the balance from money server.   
+            int balance = QueryBalanceFromMoneyServer(remoteClient);
+            if (balance < salePrice)
+            {
+                remoteClient.SendAgentAlertMessage("Unable to buy now. You don't have sufficient funds.", false);
+                return;
+            }
+
+            Scene scene = LocateSceneClientIn(remoteClient.AgentId);
+            if (scene != null)
+            {
+                SceneObjectPart sceneObj = scene.GetSceneObjectPart(localID);
+                if (sceneObj != null && sceneObj.SalePrice == salePrice)
+                {
+                    IBuySellModule mod = scene.RequestModuleInterface<IBuySellModule>();
+                    bool ret = true;
+                    if (mod != null)
+                    {
+                        ret = TransferMoney(remoteClient.AgentId, sceneObj.OwnerID, salePrice,
+                                                (int)MoneyTransactionType.PayObject, sceneObj.UUID, sceneObj.RegionHandle, "Object Buy");
+                    }
+                    if (ret)
+                    {
+                        mod.BuyObject(remoteClient, categoryID, localID, saleType, salePrice);
+                    }
+                }
+                else
+                {
+                    // Implmenting base sale data checking here so the default OpenSimulator implementation isn't useless
+                    // combined with other implementations.  We're actually validating that the client is sending the data
+                    // that it should.   In theory, the client should already know what to send here because it'll see it when it
+                    // gets the object data.   If the data sent by the client doesn't match the object, the viewer probably has an
+                    // old idea of what the object properties are.   Viewer developer Hazim informed us that the base module
+                    // didn't check the client sent data against the object do any.   Since the base modules are the
+                    // 'crowning glory' examples of good practice..
+
+                    // Validate that the object exists in the scene the user is in
+                    if (sceneObj == null)
+                    {
+                        remoteClient.SendAgentAlertMessage("Unable to buy now. The object was not found.", false);
+                        return;
+                    }
+
+                    // Validate that the client sent the price that the object is being sold for
+                    if (sceneObj.SalePrice != salePrice)
+                    {
+                        remoteClient.SendAgentAlertMessage("Cannot buy at this price. Buy Failed. If you continue to get this relog.", false);
+                        return;
+                    }
+                }
+            }
+        }
+
+        public void MoveMoney(UUID fromUser, UUID toUser, int amount, string text)
+        {
+        }
+
+        public bool MoveMoney(UUID fromUser, UUID toUser, int amount, MoneyTransactionType type, string text)
+        {
+            return true;
+        }
 
         #region MoneyModule XML-RPC Handler
 
@@ -557,58 +1112,11 @@ namespace OpenSim.Forge.Currency
             return resp;
         }
 
-        public XmlRpcResponse UserAlertHandler(XmlRpcRequest request, IPEndPoint remoteClient)
-        {
-            bool ret = false;
+        /// <summary>
+        /// Event Handler for when an Avatar enters one of the parcels in the simulator.
+        /// </summary>
 
-            #region confirm the request and show the notice from money server.
 
-            if (request.Params.Count > 0)
-            {
-                Hashtable requestParam = (Hashtable)request.Params[0];
-                if (requestParam.Contains("clientUUID") &&
-                    requestParam.Contains("clientSessionID") &&
-                    requestParam.Contains("clientSecureSessionID"))
-                {
-                    UUID clientUUID = UUID.Zero;
-                    UUID.TryParse((string)requestParam["clientUUID"], out clientUUID);
-                    if (clientUUID != UUID.Zero)
-                    {
-                        IClientAPI client = LocateClientObject(clientUUID);
-                        if (client != null &&
-                            client.SessionId.ToString() == (string)requestParam["clientSessionID"] &&
-                            client.SecureSessionId.ToString() == (string)requestParam["clientSecureSessionID"])
-                        {
-                            if (requestParam.Contains("Description"))
-                            {
-                                // Show the notice dialog with money server message.
-                               GridInstantMessage gridMsg = new GridInstantMessage(null,
-                                                                                    UUID.Zero,
-                                                                                    "MonyServer",
-                                                                                    new UUID(clientUUID.ToString()),
-                                                                                    (byte)InstantMessageDialog.MessageFromAgent,
-                                                                                    "Please clink the URI in IM window to confirm your purchase.",
-                                                                                    false,
-                                                                                    new Vector3());
-
-                                client.SendInstantMessage(gridMsg);
-                                ret = true; 
-                            }
-                        }
-                    }
-                }
-            }
-
-            #endregion
-
-            // Send the response to money server.
-            XmlRpcResponse resp = new XmlRpcResponse();
-            Hashtable paramTable = new Hashtable();
-            paramTable["success"] = ret;
-
-            resp.Value = paramTable;
-            return resp;
-        }
 
         public XmlRpcResponse SendConfirmLinkHandler(XmlRpcRequest request, IPEndPoint remoteClient)
         {
@@ -731,7 +1239,7 @@ namespace OpenSim.Forge.Currency
             XmlRpcResponse resp = new XmlRpcResponse();
             Hashtable paramTable = new Hashtable();
             paramTable["success"] = ret;
-			if (!ret)
+            if (!ret)
             {
                 m_log.ErrorFormat("[MONEY]: Transaction is failed. MoneyServer will rollback.");
             }
@@ -862,12 +1370,12 @@ namespace OpenSim.Forge.Currency
         /// <returns>   
         /// return true, if successfully.   
         /// </returns>   
-        private bool TransferMoney(UUID sender, 
-                                   UUID receiver, 
-                                   int amount, 
-                                   int transactiontype, 
-                                   UUID localID, 
-                                   ulong regionHandle, 
+        private bool TransferMoney(UUID sender,
+                                   UUID receiver,
+                                   int amount,
+                                   int transactiontype,
+                                   UUID localID,
+                                   ulong regionHandle,
                                    string description)
         {
             bool ret = false;
@@ -900,19 +1408,23 @@ namespace OpenSim.Forge.Currency
                 // Fill parameters for money transfer XML-RPC.   
                 Hashtable paramTable = new Hashtable();
 
-                if (senderscene.UserManagementModule.IsLocalGridUser(sender)){
+                if (senderscene.UserManagementModule.IsLocalGridUser(sender))
+                {
                     paramTable["senderUserServIP"] = m_userServIP;
                 }
-                else{
+                else
+                {
                     paramTable["senderUserServIP"] = Util.GetHostFromDNS(senderscene.UserManagementModule.GetUserHomeURL(sender).Split(new char[] { '/', ':' })[3]).ToString();
                 }
 
                 paramTable["senderID"] = sender.ToString();
 
-                if (receiverscene.UserManagementModule.IsLocalGridUser(receiver)){
+                if (receiverscene.UserManagementModule.IsLocalGridUser(receiver))
+                {
                     paramTable["receiverUserServIP"] = m_userServIP;
                 }
-                else{
+                else
+                {
                     paramTable["receiverUserServIP"] = Util.GetHostFromDNS(receiverscene.UserManagementModule.GetUserHomeURL(receiver).Split(new char[] { '/', ':' })[3]).ToString();
                 }
 
@@ -1001,25 +1513,22 @@ namespace OpenSim.Forge.Currency
                     if (scene != null)
                     {
                         userName = scene.UserManagementModule.GetUserName(client.AgentId);
-                        /*UserAccount profile = UserAccountService.GetUserAccount(scene.RegionInfo.ScopeID, client.AgentId);
-                          if (profile != null)
-                        {
-                            userName = profile.FirstName + " " + profile.LastName;
-                        }*/
                     }
                 }
 
                 // Login the Money Server.   
                 Hashtable paramTable = new Hashtable();
 
-                if (scene.UserManagementModule.IsLocalGridUser(client.AgentId)){
+                if (scene.UserManagementModule.IsLocalGridUser(client.AgentId))
+                {
                     paramTable["userServIP"] = m_userServIP;
                 }
-                else{
+                else
+                {
                     paramTable["userServIP"] = Util.GetHostFromDNS(scene.UserManagementModule.GetUserHomeURL(client.AgentId).Split(new char[] { '/', ':' })[3]).ToString();
                 }
-                
-                paramTable["openSimServIP"] = scene.RegionInfo.ServerURI.Replace(scene.RegionInfo.InternalEndPoint.Port.ToString(), 
+
+                paramTable["openSimServIP"] = scene.RegionInfo.ServerURI.Replace(scene.RegionInfo.InternalEndPoint.Port.ToString(),
                                                                                  scene.RegionInfo.HttpPort.ToString());
                 paramTable["userName"] = userName;
                 paramTable["clientUUID"] = client.AgentId.ToString();
@@ -1082,10 +1591,12 @@ namespace OpenSim.Forge.Currency
                 // Log off from the Money Server.   
                 Hashtable paramTable = new Hashtable();
 
-                if (scene.UserManagementModule.IsLocalGridUser(client.AgentId)){
+                if (scene.UserManagementModule.IsLocalGridUser(client.AgentId))
+                {
                     paramTable["userServIP"] = m_userServIP;
                 }
-                else{
+                else
+                {
                     paramTable["userServIP"] = Util.GetHostFromDNS(scene.UserManagementModule.GetUserHomeURL(client.AgentId).Split(new char[] { '/', ':' })[3]).ToString();
                 }
 
@@ -1162,74 +1673,9 @@ namespace OpenSim.Forge.Currency
             return moneyRespData;
         }
 
-        /// <summary>   
-        /// Locates a IClientAPI for the client specified   
-        /// </summary>   
-        /// <param name="AgentID"></param>   
-        /// <returns></returns>   
-        private IClientAPI LocateClientObject(UUID AgentID)
-        {
-            ScenePresence tPresence = null;
-            IClientAPI rclient = null;
 
-            lock (m_sceneList)
-            {
-                foreach (Scene _scene in m_sceneList.Values)
-                {
-                    tPresence = _scene.GetScenePresence(AgentID);
-                    if (tPresence != null)
-                    {
-                        if (!tPresence.IsChildAgent)
-                        {
-                            rclient = tPresence.ControllingClient;
-                        }
-                    }
-                    if (rclient != null)
-                    {
-                        return rclient;
-                    }
-                }
-            }
 
-            return null;
-        }
 
-        private Scene LocateSceneClientIn(UUID AgentId)
-        {
-            lock (m_sceneList)
-            {
-                foreach (Scene _scene in m_sceneList.Values)
-                {
-                    ScenePresence tPresence = _scene.GetScenePresence(AgentId);
-                    if (tPresence != null)
-                    {
-                        if (!tPresence.IsChildAgent)
-                        {
-                            return _scene;
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private SceneObjectPart FindPrim(UUID objectID)
-        {
-            lock (m_sceneList)
-            {
-                foreach (Scene scene in m_sceneList.Values)
-                {
-                    SceneObjectPart part = scene.GetSceneObjectPart(objectID);
-                    if (part != null)
-                    {
-                        return part;
-                    }
-                }
-            }
-
-            return null;
-        }
 
 
         private int QueryBalanceFromMoneyServer(IClientAPI client)
@@ -1246,13 +1692,15 @@ namespace OpenSim.Forge.Currency
                 {
                     Hashtable paramTable = new Hashtable();
 
-                    if (scene.UserManagementModule.IsLocalGridUser(client.AgentId)){
+                    if (scene.UserManagementModule.IsLocalGridUser(client.AgentId))
+                    {
                         paramTable["userServIP"] = m_userServIP;
                     }
-                    else{
+                    else
+                    {
                         paramTable["userServIP"] = Util.GetHostFromDNS(scene.UserManagementModule.GetUserHomeURL(client.AgentId).Split(new char[] { '/', ':' })[3]).ToString();
                     }
-                    
+
                     paramTable["clientUUID"] = client.AgentId.ToString();
                     paramTable["clientSessionID"] = client.SessionId.ToString();
                     paramTable["clientSecureSessionID"] = client.SecureSessionId.ToString();
@@ -1289,24 +1737,7 @@ namespace OpenSim.Forge.Currency
             return ret;
         }
 
-        //private void OnEconomyDataRequest(UUID agentId)
-        private void OnEconomyDataRequest(IClientAPI user)
-        {
-            //m_log.InfoFormat("[MONEY]: OnEconomyDataRequest:");
 
-            //IClientAPI user = GetLocateClient(agentId);
-
-            if (user != null)
-            {
-                //Scene s = GetLocateScene(user.AgentId);
-                Scene s = (Scene)user.Scene;
-
-                user.SendEconomyData(EnergyEfficiency, s.RegionInfo.ObjectCapacity, ObjectCount, PriceEnergyUnit, PriceGroupCreate,
-                                     PriceObjectClaim, PriceObjectRent, PriceObjectScaleFactor, PriceParcelClaim, PriceParcelClaimFactor,
-                                     PriceParcelRent, PricePublicObjectDecay, PricePublicObjectDelete, PriceRentLight, PriceUpload,
-                                     TeleportMinPrice, TeleportPriceExponent);
-            }
-        }
 
         /// <summary>   
         /// Sends the the stored money balance to the client   
@@ -1345,64 +1776,49 @@ namespace OpenSim.Forge.Currency
             }
         }
 
-        private void OnRequestPayPrice(IClientAPI client, UUID objectID)
+        private void OnNewClient(IClientAPI client)
         {
-            Scene scene = LocateSceneClientIn(client.AgentId);
-            if (scene == null) return;
-            SceneObjectPart sceneObj = scene.GetSceneObjectPart(objectID);
-            if (sceneObj == null) return;
-            SceneObjectGroup group = sceneObj.ParentGroup;
-            SceneObjectPart root = group.RootPart;
+            int balance = 0;
+            LoginMoneyServer(client, out balance);
+            client.SendMoneyBalance(UUID.Zero, true, new byte[0], balance, 0, UUID.Zero, false, UUID.Zero, false, 0, String.Empty);
 
-            client.SendPayPrice(objectID, root.PayPrice);
+            // Subscribe to Money messages   
+            client.OnEconomyDataRequest += EconomyDataRequestHandler;
+            client.OnMoneyBalanceRequest += OnMoneyBalanceRequest;
+            client.OnRequestPayPrice += RequestPayPrice;
+            client.OnObjectBuy += ObjectBuy;
+            client.OnLogout += ClientClosed;
         }
 
-        public void OnObjectBuy(IClientAPI remoteClient, UUID agentID,
-                                UUID sessionID, UUID groupID, UUID categoryID,
-                                uint localID, byte saleType, int salePrice)
-        {
-            // Handle the parameters error.   
-            if (remoteClient == null || salePrice <= 0) return;
 
-            // Get the balance from money server.   
-            int balance = QueryBalanceFromMoneyServer(remoteClient);
-            if (balance < salePrice)
-            {
-                remoteClient.SendAgentAlertMessage("Unable to buy now. You don't have sufficient funds.", false);
-                return;
-            }
-
-            Scene scene = LocateSceneClientIn(remoteClient.AgentId);
-            if (scene != null)
-            {
-                SceneObjectPart sceneObj = scene.GetSceneObjectPart(localID);
-                if (sceneObj != null)
-                {
-                    IBuySellModule mod = scene.RequestModuleInterface<IBuySellModule>();
-                    bool ret = true;
-                    if (mod != null)
-                    {
-                        ret = TransferMoney(remoteClient.AgentId, sceneObj.OwnerID, salePrice,
-												(int)MoneyTransactionType.PayObject, sceneObj.UUID, sceneObj.RegionHandle, "Object Buy");
-                    }
-                    if (ret)
-                    {
-                        mod.BuyObject(remoteClient, categoryID, localID, saleType, salePrice);
-                    }
-                }
-                else
-                {
-                    remoteClient.SendAgentAlertMessage("Unable to buy now. The object was not found.", false);
-                    return;
-                }
-            }
-        }
 
         #endregion
 
-        /*Private**************************************************************/
 
 
+        public void ApplyUploadCharge(UUID agentID)
+        {
+            // Empty!
+        }
 
+
+        public void ApplyGroupCreationCharge(UUID agentID)
+        {
+            // Empty!
+        }
+
+        public bool GroupCreationCovered(IClientAPI client)
+        {
+            return true;
+        }
+
+    }
+
+    public enum TransactionType : int
+    {
+     SystemGenerated = 0,
+     RegionMoneyRequest = 1,
+     Gift = 2,
+     Purchase = 3
     }
 }
